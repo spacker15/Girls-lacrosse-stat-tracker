@@ -1,4 +1,4 @@
-# Sideline Lacrosse Stats
+# Girls lacrosse stat tracker
 
 A complete browser-based lacrosse stat tracking application built for coaches, scorekeepers, and parent volunteers.
 
