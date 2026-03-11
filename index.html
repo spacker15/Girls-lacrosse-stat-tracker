@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sideline Lacrosse Stats</title>
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    :root{
+      --bg:#0f1420; --card:#171f2d; --card2:#1f2937; --text:#f4f7fb; --muted:#9fb0c6;
+      --accent:#14b8ff; --accent2:#ff4d6d; --success:#4ade80; --warn:#ffd166; --border:#314056;
+      --field:#2d6a4f;
+    }
+    body.light{
+      --bg:#f5f8fc; --card:#ffffff; --card2:#eef3fa; --text:#122033; --muted:#5f718a;
+      --accent:#0077cc; --accent2:#d7263d; --success:#1f9d55; --warn:#cc8a00; --border:#d7deea;
+      --field:#89c2a1;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+    .topbar{
+      position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--border);
+      display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 16px
+    }
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{width:64px;height:64px;border-radius:12px;object-fit:contain;background:#fff;padding:4px}
+    .brand h1{margin:0;font-size:1.15rem}
+    .brand p{margin:2px 0 0;color:var(--muted);font-size:.92rem}
+    .actions,.controls{display:flex;gap:8px;flex-wrap:wrap}
+    button,.btn,label.file-btn{
+      border:1px solid var(--border);background:var(--accent);color:#fff;border-radius:10px;
+      padding:10px 14px;cursor:pointer;font-weight:700;font-size:.95rem
+    }
+    button.secondary,.btn.secondary,label.file-btn.secondary{background:var(--card2);color:var(--text)}
+    button.warn{background:var(--warn);color:#222}
+    button.danger{background:var(--accent2)}
+    .tabs{
+      position:sticky;top:89px;z-index:15;background:var(--bg);border-bottom:1px solid var(--border);
+      display:flex;gap:8px;padding:10px 12px;overflow:auto
+    }
+    .tabs button.active{background:var(--accent2)}
+    main{padding:12px}
+    .tab{display:none}
+    .tab.active{display:block}
+    .card{
+      background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px
+    }
+    .split{display:grid;grid-template-columns:1.2fr 1fr;gap:12px}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+    input,select,textarea{
+      width:100%;background:var(--card2);color:var(--text);border:1px solid var(--border);
+      border-radius:10px;padding:10px
+    }
+    textarea{resize:vertical}
+    label{display:block;margin-bottom:6px;color:var(--muted);font-size:.92rem}
+    .section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+    .section-head h2,.section-head h3{margin:0}
+    .subtle{color:var(--muted);font-size:.92rem}
+    .scoreboard{
+      display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;text-align:center;
+      margin-top:8px
+    }
+    .score{font-size:3rem;font-weight:800}
+    .score-label{color:var(--muted);font-size:.95rem;margin-bottom:6px}
+    .vs{font-size:1.3rem;color:var(--muted)}
+    .clock{font-size:3rem;font-weight:800;text-align:center;margin:12px 0}
+    .stack{display:flex;flex-direction:column;gap:8px}
+    .player-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+    .player-card{
+      background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:12px
+    }
+    .player-head{display:flex;gap:10px;align-items:center}
+    .player-photo{
+      width:58px;height:58px;border-radius:50%;object-fit:cover;background:#dbe7f5;color:#112;
+      display:flex;align-items:center;justify-content:center;font-weight:800
+    }
+    .player-meta h3{margin:0 0 2px;font-size:1rem}
+    .player-meta p{margin:0;color:var(--muted);font-size:.88rem}
+    .stat-buttons{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+    .stat-buttons button{padding:9px 6px}
+    .draw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:8px}
+    .draw-chip{
+      width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+      border:2px solid var(--border);background:var(--card2);font-weight:800
+    }
+    .draw-chip.win{color:var(--success);border-color:var(--success)}
+    .draw-chip.loss{color:var(--accent2);border-color:var(--accent2)}
+    .timeline-item,.penalty-item,.roster-item{
+      background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:10px
+    }
+    .roster-item{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    .roster-left{display:flex;gap:10px;align-items:center}
+    .tiny{font-size:.8rem;color:var(--muted)}
+    .tag{
+      display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid var(--border);font-size:.8rem;color:var(--muted)
+    }
+    #shotCanvas{
+      width:100%;max-width:100%;border-radius:12px;border:1px solid var(--border);background:var(--field)
+    }
+    .goalie-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    .goalie-stat{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center}
+    .goalie-val{font-size:2rem;font-weight:800;margin:6px 0}
+    .checkbox{display:flex;align-items:center;gap:8px;color:var(--text)}
+    .hidden{display:none !important}
+    @media (max-width: 980px){
+      .split,.grid,.goalie-grid{grid-template-columns:1fr}
+      .tabs{top:88px}
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img src="assets/logo.png" alt="Team logo" class="logo" onerror="this.style.display='none'">
+      <div>
+        <h1 id="brandTitle">Sideline Lacrosse Stats</h1>
+        <p id="brandSub">Complete lacrosse game tracking application</p>
+      </div>
+    </div>
+    <div class="actions">
+      <button id="installBtn" class="secondary hidden">Install</button>
+      <button id="backupBtn" class="secondary">Backup</button>
+      <label class="file-btn secondary">Restore<input id="restoreInput" type="file" accept=".json,application/json" hidden></label>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button data-tab="setup" class="active">Setup</button>
+    <button data-tab="game">Game</button>
+    <button data-tab="players">Players</button>
+    <button data-tab="draws">Draws</button>
+    <button data-tab="shots">Shots</button>
+    <button data-tab="goalie">Goalie</button>
+    <button data-tab="timeline">Timeline</button>
+    <button data-tab="reports">Reports</button>
+    <button data-tab="settings">Settings</button>
+  </nav>
+
+  <main>
+    <section id="tab-setup" class="tab active">
+      <div class="split">
+        <div class="card">
+          <div class="section-head"><h2>Team Setup</h2></div>
+          <div class="grid">
+            <div><label>School</label><input id="schoolName" placeholder="Creekside High School"></div>
+            <div><label>Team Name</label><input id="teamName" placeholder="Creekside Knights"></div>
+            <div><label>Mascot</label><input id="mascot" placeholder="Knights"></div>
+            <div><label>Level</label><select id="level"><option>JV</option><option>Varsity</option></select></div>
+            <div><label>Primary Color</label><input id="primaryColor" type="color" value="#14b8ff"></div>
+            <div><label>Secondary Color</label><input id="secondaryColor" type="color" value="#ff4d6d"></div>
+            <div><label>Theme</label><select id="theme"><option value="dark">Dark</option><option value="light">Light</option></select></div>
+            <div><label>Quarter Length (min)</label><input id="quarterLength" type="number" min="1" max="30" value="12"></div>
+          </div>
+          <div class="controls">
+            <button id="saveSetupBtn">Save Setup</button>
+            <button id="newGameBtn" class="secondary">New Game</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-head"><h2>Roster Import</h2></div>
+          <div class="subtle">
+            Use any of these: direct MaxPreps URL, pasted page text/HTML, saved HTML upload, or manual player entry.
+          </div>
+          <div class="stack">
+            <input id="maxprepsUrl" placeholder="Paste MaxPreps roster URL">
+            <div class="controls">
+              <button id="tryUrlImportBtn">Try URL Import</button>
+              <label class="file-btn secondary">Upload Saved HTML<input id="htmlInput" type="file" accept=".html,text/html" hidden></label>
+            </div>
+            <textarea id="pasteImport" rows="9" placeholder="Paste MaxPreps roster page text or HTML here"></textarea>
+            <div class="controls">
+              <button id="pasteImportBtn">Import from Paste</button>
+              <button id="clearPasteBtn" class="secondary">Clear</button>
+            </div>
+            <div id="importStatus" class="subtle"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-head">
+          <h2>Manual Roster Manager</h2>
+          <div class="controls">
+            <button id="sortRosterBtn" class="secondary">Sort by Number</button>
+            <button id="loadRosterBtn">Load Roster for This Game</button>
+          </div>
+        </div>
+        <div class="grid">
+          <div><label>Number</label><input id="playerNumber"></div>
+          <div><label>Name</label><input id="playerName"></div>
+          <div><label>Position</label><input id="playerPosition" placeholder="A / M / D / G"></div>
+          <div><label>Class Year</label><input id="playerClassYear" placeholder="2027"></div>
+        </div>
+        <div class="controls">
+          <label class="checkbox"><input id="playerStarter" type="checkbox"> Starter</label>
+          <label class="file-btn secondary">Add Photo<input id="photoInput" type="file" accept="image/*" hidden></label>
+          <button id="addPlayerBtn">Add Player</button>
+        </div>
+        <div id="rosterList" class="stack" style="margin-top:10px"></div>
+      </div>
+    </section>
+
+    <section id="tab-game" class="tab">
+      <div class="card">
+        <div class="grid">
+          <div><label>Opponent</label><input id="opponentName" placeholder="Beachside"></div>
+          <div><label>Date</label><input id="gameDate" type="date"></div>
+          <div><label>Period</label><select id="period"><option>Q1</option><option>Q2</option><option>Q3</option><option>Q4</option><option>OT</option></select></div>
+          <div><label>Penalty Length (sec)</label><input id="defaultPenaltyLength" type="number" value="120"></div>
+        </div>
+
+        <div class="scoreboard">
+          <div>
+            <div class="score-label">Us</div>
+            <div id="homeScore" class="score">0</div>
+            <div class="controls" style="justify-content:center">
+              <button id="homePlusBtn">+</button><button id="homeMinusBtn" class="secondary">-</button>
+            </div>
+          </div>
+          <div class="vs">
+            <div id="clockDisplay" class="clock">12:00</div>
+            <div class="controls" style="justify-content:center">
+              <button id="clockStartBtn">Start</button>
+              <button id="clockStopBtn" class="secondary">Stop</button>
+              <button id="clockResetBtn" class="secondary">Reset</button>
+              <button id="clockPlus30Btn" class="secondary">+ :30</button>
+            </div>
+          </div>
+          <div>
+            <div class="score-label" id="oppLabel">Opponent</div>
+            <div id="awayScore" class="score">0</div>
+            <div class="controls" style="justify-content:center">
+              <button id="awayPlusBtn">+</button><button id="awayMinusBtn" class="secondary">-</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="split">
+        <div class="card">
+          <div class="section-head"><h2>Active Penalties</h2><button id="addPenaltyBtn">Add Penalty</button></div>
+          <div id="penaltyList" class="stack"></div>
+        </div>
+        <div class="card">
+          <div class="section-head"><h2>Quick Summary</h2></div>
+          <div id="quickSummary" class="stack"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-players" class="tab">
+      <div class="card">
+        <div class="section-head">
+          <h2>Player Photo Stat Cards</h2>
+          <input id="playerSearch" placeholder="Search player">
+        </div>
+        <div id="playerGrid" class="player-grid"></div>
+      </div>
+    </section>
+
+    <section id="tab-draws" class="tab">
+      <div class="card">
+        <div class="section-head">
+          <h2>Draw Control Circle Tracker</h2>
+          <div class="controls">
+            <button id="drawWinBtn">Add Win</button>
+            <button id="drawLossBtn" class="secondary">Add Loss</button>
+            <button id="undoDrawBtn" class="secondary">Undo</button>
+            <button id="clearDrawsBtn" class="secondary">Clear</button>
+          </div>
+        </div>
+        <div id="drawGrid" class="draw-grid"></div>
+        <div id="drawSummary" class="subtle" style="margin-top:10px"></div>
+      </div>
+    </section>
+
+    <section id="tab-shots" class="tab">
+      <div class="card">
+        <div class="section-head">
+          <h2>Goal Map Shot Chart</h2>
+          <div class="controls">
+            <select id="shotPlayerSelect"></select>
+            <button id="shotModeGoalBtn">Goal Mode</button>
+            <button id="shotModeShotBtn" class="secondary">Shot Mode</button>
+            <button id="undoShotBtn" class="secondary">Undo</button>
+            <button id="clearShotsBtn" class="secondary">Clear</button>
+          </div>
+        </div>
+        <div class="subtle">Tap the field to log a shot or goal for the selected player.</div>
+        <canvas id="shotCanvas" width="900" height="560"></canvas>
+        <div id="shotSummary" class="subtle" style="margin-top:10px"></div>
+      </div>
+    </section>
+
+    <section id="tab-goalie" class="tab">
+      <div class="card">
+        <div class="section-head">
+          <h2>Goalie Stat Mode</h2>
+          <select id="goalieSelect"></select>
+        </div>
+        <div class="goalie-grid">
+          <div class="goalie-stat"><div class="tiny">Saves</div><div id="goalieSaves" class="goalie-val">0</div><div class="controls" style="justify-content:center"><button data-goalie="saves" data-delta="1">+</button><button class="secondary" data-goalie="saves" data-delta="-1">-</button></div></div>
+          <div class="goalie-stat"><div class="tiny">Goals Allowed</div><div id="goalieGA" class="goalie-val">0</div><div class="controls" style="justify-content:center"><button data-goalie="ga" data-delta="1">+</button><button class="secondary" data-goalie="ga" data-delta="-1">-</button></div></div>
+          <div class="goalie-stat"><div class="tiny">Minutes</div><div id="goalieMin" class="goalie-val">0</div><div class="controls" style="justify-content:center"><button data-goalie="minutes" data-delta="1">+</button><button class="secondary" data-goalie="minutes" data-delta="-1">-</button></div></div>
+          <div class="goalie-stat"><div class="tiny">Save %</div><div id="goaliePct" class="goalie-val">0%</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-timeline" class="tab">
+      <div class="card">
+        <div class="section-head">
+          <h2>Game Timeline</h2>
+          <div class="controls">
+            <button id="timelineNoteBtn" class="secondary">Add Note</button>
+            <button id="clearTimelineBtn" class="secondary">Clear</button>
+          </div>
+        </div>
+        <div id="timelineList" class="stack"></div>
+      </div>
+    </section>
+
+    <section id="tab-reports" class="tab">
+      <div class="card">
+        <div class="section-head">
+          <h2>Auto TeamSnap Recap Generator</h2>
+          <div class="controls">
+            <button id="generateRecapBtn">Generate</button>
+            <button id="copyRecapBtn" class="secondary">Copy</button>
+            <button id="downloadRecapBtn" class="secondary">Download</button>
+          </div>
+        </div>
+        <textarea id="recapText" rows="18"></textarea>
+      </div>
+    </section>
+
+    <section id="tab-settings" class="tab">
+      <div class="card">
+        <div class="section-head"><h2>Application Settings</h2></div>
+        <div class="controls">
+          <button id="saveSettingsBtn">Save Settings</button>
+          <button id="resetAppBtn" class="danger">Reset App</button>
+        </div>
+        <div class="subtle" style="margin-top:10px">
+          Direct browser import from third-party sites can be blocked. That’s why this app also supports pasted MaxPreps text/HTML and saved HTML upload.
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "sidelineLacrosseStatsComplete";
+    const defaultState = {
+      setup:{school:"",team:"",mascot:"",level:"JV",primary:"#14b8ff",secondary:"#ff4d6d",theme:"dark",quarterLength:12},
+      roster:[],
+      currentGame:{
+        opponent:"",date:"",period:"Q1",home:0,away:0,players:[],playerStats:{},
+        draws:[],shots:[],shotMode:"goal",timeline:[],
+        penalties:[],goalie:{playerId:"",saves:0,ga:0,minutes:0}
+      }
+    };
+    let state = loadState();
+    let deferredPrompt = null;
+    let pendingPhoto = "";
+    let clockTimer = null;
+    let clockRemaining = state.setup.quarterLength * 60;
+
+    function loadState(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(!raw) return structuredClone(defaultState);
+        return mergeDeep(structuredClone(defaultState), JSON.parse(raw));
+      }catch(e){ return structuredClone(defaultState); }
+    }
+    function mergeDeep(target, source){
+      for(const key of Object.keys(source || {})){
+        if(source[key] && typeof source[key] === "object" && !Array.isArray(source[key])){
+          target[key] = mergeDeep(target[key] || {}, source[key]);
+        } else target[key] = source[key];
+      }
+      return target;
+    }
+    function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    function $(s){ return document.querySelector(s); }
+    function $all(s){ return Array.from(document.querySelectorAll(s)); }
+    function uid(){ return "id_" + Math.random().toString(36).slice(2,10); }
+    function initials(name){ return (name||"").split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join("").toUpperCase() || "?"; }
+    function esc(str){ return String(str ?? "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+    function fmtClock(sec){ const m = Math.floor(sec/60); const s = String(sec%60).padStart(2,"0"); return `${m}:${s}`; }
+    function timelineStamp(){ return `${state.currentGame.period} • ${fmtClock(clockRemaining)}`; }
+
+    function applySetup(){
+      document.body.classList.toggle("light", state.setup.theme === "light");
+      document.documentElement.style.setProperty("--accent", state.setup.primary || "#14b8ff");
+      document.documentElement.style.setProperty("--accent2", state.setup.secondary || "#ff4d6d");
+      $("#brandTitle").textContent = state.setup.team || "Sideline Lacrosse Stats";
+      $("#brandSub").textContent = state.setup.school ? `${state.setup.school} • ${state.setup.level}` : "Complete lacrosse game tracking application";
+      $("#schoolName").value = state.setup.school;
+      $("#teamName").value = state.setup.team;
+      $("#mascot").value = state.setup.mascot;
+      $("#level").value = state.setup.level;
+      $("#primaryColor").value = state.setup.primary;
+      $("#secondaryColor").value = state.setup.secondary;
+      $("#theme").value = state.setup.theme;
+      $("#quarterLength").value = state.setup.quarterLength;
+      clockRemaining = state.setup.quarterLength * 60;
+      renderClock();
+    }
+
+    function syncGameFields(){
+      $("#opponentName").value = state.currentGame.opponent;
+      $("#gameDate").value = state.currentGame.date;
+      $("#period").value = state.currentGame.period;
+      $("#oppLabel").textContent = state.currentGame.opponent || "Opponent";
+      $("#homeScore").textContent = state.currentGame.home;
+      $("#awayScore").textContent = state.currentGame.away;
+      $("#defaultPenaltyLength").value = 120;
+    }
+
+    function renderRoster(){
+      const box = $("#rosterList");
+      box.innerHTML = "";
+      if(!state.roster.length){
+        box.innerHTML = `<div class="subtle">No roster loaded yet.</div>`;
+        renderPlayerSelectors();
+        return;
+      }
+      for(const p of state.roster){
+        const row = document.createElement("div");
+        row.className = "roster-item";
+        row.innerHTML = `
+          <div class="roster-left">
+            ${p.photo ? `<img class="player-photo" src="${p.photo}" alt="">` : `<div class="player-photo">${esc(initials(p.name))}</div>`}
+            <div>
+              <div><strong>#${esc(p.number)} ${esc(p.name)}</strong></div>
+              <div class="tiny">${esc(p.position || "")} ${p.classYear ? "• " + esc(p.classYear) : ""} ${p.starter ? "• Starter" : ""}</div>
+            </div>
+          </div>
+          <div class="controls">
+            <button class="secondary" data-del="${p.id}">Delete</button>
+          </div>
+        `;
+        row.querySelector("button").addEventListener("click", ()=>{
+          state.roster = state.roster.filter(x=>x.id !== p.id);
+          saveState(); renderRoster();
+        });
+        box.appendChild(row);
+      }
+      renderPlayerSelectors();
+    }
+
+    function ensureGameStats(){
+      for(const p of state.currentGame.players){
+        if(!state.currentGame.playerStats[p.id]){
+          state.currentGame.playerStats[p.id] = {goals:0,assists:0,sog:0,gb:0,dc:0,ct:0};
+        }
+      }
+    }
+
+    function loadRosterForGame(){
+      state.currentGame.players = structuredClone(state.roster);
+      state.currentGame.playerStats = {};
+      ensureGameStats();
+      saveState();
+      renderPlayers();
+      renderPlayerSelectors();
+      addTimeline("system", "Roster loaded for this game");
+      renderRecap();
+    }
+
+    function renderPlayers(){
+      const q = $("#playerSearch").value.trim().toLowerCase();
+      const box = $("#playerGrid");
+      box.innerHTML = "";
+      if(!state.currentGame.players.length){
+        box.innerHTML = `<div class="subtle">Load the roster for this game first.</div>`;
+        return;
+      }
+      ensureGameStats();
+      const players = state.currentGame.players.filter(p => !q || p.name.toLowerCase().includes(q) || String(p.number).includes(q));
+      for(const p of players){
+        const s = state.currentGame.playerStats[p.id];
+        const card = document.createElement("div");
+        card.className = "player-card";
+        card.innerHTML = `
+          <div class="player-head">
+            ${p.photo ? `<img class="player-photo" src="${p.photo}" alt="">` : `<div class="player-photo">${esc(initials(p.name))}</div>`}
+            <div class="player-meta">
+              <h3>#${esc(p.number)} ${esc(p.name)}</h3>
+              <p>${esc(p.position || "")} ${p.classYear ? "• " + esc(p.classYear) : ""} ${p.starter ? "• Starter" : ""}</p>
+            </div>
+          </div>
+          <div class="stat-buttons">
+            <button data-stat="goals">G ${s.goals}</button>
+            <button data-stat="assists">A ${s.assists}</button>
+            <button data-stat="sog">SOG ${s.sog}</button>
+            <button data-stat="gb">GB ${s.gb}</button>
+            <button data-stat="dc">DC ${s.dc}</button>
+            <button data-stat="ct">CT ${s.ct}</button>
+          </div>
+        `;
+        card.querySelectorAll("button").forEach(btn=>{
+          btn.addEventListener("click", ()=>{
+            const stat = btn.dataset.stat;
+            s[stat] = (s[stat] || 0) + 1;
+            if(stat === "goals"){
+              state.currentGame.home += 1;
+              addTimeline("goal", `Goal — ${p.name}`);
+            } else if(stat === "assists"){
+              addTimeline("assist", `Assist — ${p.name}`);
+            } else if(stat === "dc"){
+              addTimeline("draw", `Draw control — ${p.name}`);
+            } else if(stat === "ct"){
+              addTimeline("defense", `Caused turnover — ${p.name}`);
+            }
+            saveState();
+            syncGameFields();
+            renderPlayers();
+            renderQuickSummary();
+            renderRecap();
+          });
+        });
+        box.appendChild(card);
+      }
+    }
+
+    function renderDraws(){
+      const box = $("#drawGrid");
+      box.innerHTML = "";
+      const wins = state.currentGame.draws.filter(x=>x==="W").length;
+      const total = state.currentGame.draws.length;
+      state.currentGame.draws.forEach(d=>{
+        const chip = document.createElement("div");
+        chip.className = `draw-chip ${d === "W" ? "win" : "loss"}`;
+        chip.textContent = d;
+        box.appendChild(chip);
+      });
+      $("#drawSummary").textContent = `Draw wins: ${wins}/${total} ${total ? "(" + Math.round((wins/total)*100) + "%)" : ""}`;
+    }
+
+    function renderPlayerSelectors(){
+      const shotSel = $("#shotPlayerSelect");
+      const goalieSel = $("#goalieSelect");
+      [shotSel, goalieSel].forEach(sel=>{
+        const current = sel.value;
+        sel.innerHTML = `<option value="">Select player</option>`;
+        state.currentGame.players.forEach(p=>{
+          const opt = document.createElement("option");
+          opt.value = p.id;
+          opt.textContent = `#${p.number} ${p.name}`;
+          sel.appendChild(opt);
+        });
+        if(current) sel.value = current;
+      });
+      if(state.currentGame.goalie.playerId) goalieSel.value = state.currentGame.goalie.playerId;
+    }
+
+    function renderGoalie(){
+      const g = state.currentGame.goalie;
+      $("#goalieSaves").textContent = g.saves || 0;
+      $("#goalieGA").textContent = g.ga || 0;
+      $("#goalieMin").textContent = g.minutes || 0;
+      const faced = (g.saves||0) + (g.ga||0);
+      $("#goaliePct").textContent = faced ? Math.round((g.saves/faced)*100) + "%" : "0%";
+    }
+
+    function addTimeline(type, text){
+      state.currentGame.timeline.unshift({type, text, stamp: timelineStamp()});
+      renderTimeline();
+    }
+    function renderTimeline(){
+      const box = $("#timelineList");
+      box.innerHTML = "";
+      if(!state.currentGame.timeline.length){
+        box.innerHTML = `<div class="subtle">No timeline events yet.</div>`;
+        return;
+      }
+      state.currentGame.timeline.forEach(item=>{
+        const row = document.createElement("div");
+        row.className = "timeline-item";
+        row.innerHTML = `<strong>${esc(item.stamp)}</strong><div>${esc(item.text)}</div>`;
+        box.appendChild(row);
+      });
+    }
+
+    function renderQuickSummary(){
+      const stats = state.currentGame.playerStats;
+      const players = state.currentGame.players.map(p=>({player:p, stats: stats[p.id] || {}}));
+      const goalLeaders = players.filter(x=>(x.stats.goals||0)>0).sort((a,b)=>(b.stats.goals||0)-(a.stats.goals||0)).slice(0,3);
+      const drawWins = state.currentGame.draws.filter(x=>x==="W").length;
+      const drawTotal = state.currentGame.draws.length;
+      $("#quickSummary").innerHTML = `
+        <div class="timeline-item"><strong>Record this game:</strong> ${state.currentGame.home} - ${state.currentGame.away}</div>
+        <div class="timeline-item"><strong>Draws:</strong> ${drawWins}/${drawTotal} ${drawTotal ? "(" + Math.round((drawWins/drawTotal)*100) + "%)" : ""}</div>
+        <div class="timeline-item"><strong>Top scorers:</strong><br>${goalLeaders.length ? goalLeaders.map(x=>`${esc(x.player.name)} (${x.stats.goals}G)`).join("<br>") : "No scorers logged"}</div>
+      `;
+    }
+
+    function drawField(){
+      const canvas = $("#shotCanvas");
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--field');
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(20,20,canvas.width-40,canvas.height-40);
+      ctx.beginPath(); ctx.arc(canvas.width/2, 130, 140, 0, Math.PI, false); ctx.stroke();
+      ctx.fillStyle = "#fff"; ctx.fillRect(canvas.width/2 - 24, 65, 48, 24);
+      ctx.beginPath(); ctx.arc(canvas.width/2, 128, 40, 0, Math.PI, false); ctx.stroke();
+
+      state.currentGame.shots.forEach(s=>{
+        ctx.beginPath();
+        ctx.fillStyle = s.type === "goal" ? "#ff4d6d" : "#ffffff";
+        ctx.arc(s.x, s.y, 8, 0, Math.PI*2);
+        ctx.fill();
+        ctx.strokeStyle = "#111"; ctx.lineWidth = 1; ctx.stroke();
+      });
+
+      const total = state.currentGame.shots.length;
+      const goals = state.currentGame.shots.filter(x=>x.type==="goal").length;
+      $("#shotSummary").textContent = `Shots logged: ${total} • Goals: ${goals} • Finishing rate: ${total ? Math.round((goals/total)*100) : 0}% • Current mode: ${state.currentGame.shotMode.toUpperCase()}`;
+    }
+
+    function renderPenalties(){
+      const box = $("#penaltyList");
+      box.innerHTML = "";
+      if(!state.currentGame.penalties.length){
+        box.innerHTML = `<div class="subtle">No active penalties.</div>`;
+        return;
+      }
+      state.currentGame.penalties.forEach(p=>{
+        const row = document.createElement("div");
+        row.className = "penalty-item";
+        row.innerHTML = `
+          <div><strong>${esc(p.player)}</strong><div class="tiny">${fmtClock(p.remaining)}</div></div>
+          <div class="controls">
+            <button class="secondary" data-act="minus">-10s</button>
+            <button class="secondary" data-act="plus">+10s</button>
+            <button class="danger" data-act="clear">Clear</button>
+          </div>
+        `;
+        row.querySelectorAll("button").forEach(btn=>{
+          btn.addEventListener("click", ()=>{
+            const act = btn.dataset.act;
+            if(act === "minus") p.remaining = Math.max(0, p.remaining - 10);
+            if(act === "plus") p.remaining += 10;
+            if(act === "clear") state.currentGame.penalties = state.currentGame.penalties.filter(x=>x.id !== p.id);
+            saveState(); renderPenalties();
+          });
+        });
+        box.appendChild(row);
+      });
+    }
+
+    function parseRosterText(text){
+      const looksHtml = /<html|<table|<div|<span/i.test(text);
+      let lines = [];
+      if(looksHtml){
+        const doc = new DOMParser().parseFromString(text, "text/html");
+        lines = (doc.body ? doc.body.innerText : text).split(/\n+/).map(x=>x.trim()).filter(Boolean);
+      } else {
+        lines = text.split(/\n+/).map(x=>x.trim()).filter(Boolean);
+      }
+      const players = [];
+      for(const line of lines){
+        // CSV/tab path
+        const csv = line.split(/[,\t]/).map(x=>x.trim()).filter(Boolean);
+        if(csv.length >= 2 && /^\d{1,2}$/.test(csv[0])){
+          players.push({id:uid(), number:csv[0], name:csv[1], position:csv[2] || "", classYear:csv[3] || "", starter:false, photo:""});
+          continue;
+        }
+        // Text page path
+        const m = line.match(/^(\d{1,2})\s+([A-Za-z'.-]+(?:\s+[A-Za-z'.-]+)+)\s+([A-Z\/]+|Attack|Midfield|Defense|Goalie|A|M|D|G)\s+(\d{4}|Fr|So|Jr|Sr)?/i);
+        if(m){
+          players.push({id:uid(), number:m[1], name:m[2], position:m[3] || "", classYear:m[4] || "", starter:false, photo:""});
+        }
+      }
+      const seen = new Set();
+      return players.filter(p=>{
+        const key = `${p.number}|${p.name.toLowerCase()}`;
+        if(seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+
+    async function tryUrlImport(){
+      const url = $("#maxprepsUrl").value.trim();
+      if(!url) return alert("Paste a MaxPreps roster URL first.");
+      $("#importStatus").textContent = "Trying direct URL import...";
+      try{
+        const res = await fetch(url);
+        const text = await res.text();
+        const players = parseRosterText(text);
+        if(players.length){
+          state.roster = players;
+          saveState(); renderRoster();
+          $("#importStatus").textContent = `Imported ${players.length} players from URL.`;
+        } else {
+          $("#importStatus").textContent = "Could not detect players from that page. Try pasted text or saved HTML upload.";
+        }
+      }catch(e){
+        $("#importStatus").textContent = "Direct URL import was blocked. Use pasted text/HTML or a saved HTML upload.";
+      }
+    }
+
+    function importFromPaste(){
+      const text = $("#pasteImport").value.trim();
+      if(!text) return alert("Paste MaxPreps roster page text or HTML first.");
+      const players = parseRosterText(text);
+      if(!players.length){
+        $("#importStatus").textContent = "No players found. Paste more of the roster page text or upload saved HTML.";
+        return;
+      }
+      state.roster = players;
+      saveState(); renderRoster();
+      $("#importStatus").textContent = `Imported ${players.length} players.`;
+    }
+
+    function generateRecap(){
+      ensureGameStats();
+      const players = state.currentGame.players.map(p=>({player:p, stats: state.currentGame.playerStats[p.id] || {}}));
+      const scorers = players.filter(x=>(x.stats.goals||0)>0).sort((a,b)=>(b.stats.goals||0)-(a.stats.goals||0));
+      const drawLeaders = players.filter(x=>(x.stats.dc||0)>0).sort((a,b)=>(b.stats.dc||0)-(a.stats.dc||0));
+      const shotGoals = state.currentGame.shots.filter(s=>s.type==="goal").length;
+      const shotTotal = state.currentGame.shots.length;
+      const drawWins = state.currentGame.draws.filter(x=>x==="W").length;
+      const drawTotal = state.currentGame.draws.length;
+      const g = state.currentGame.goalie;
+      const goalieName = state.currentGame.players.find(p=>p.id===g.playerId)?.name || "Goalie";
+      const savePct = ((g.saves||0)+(g.ga||0)) ? Math.round((g.saves/((g.saves||0)+(g.ga||0)))*100) : 0;
+
+      const text = `${state.setup.team || "Team"} ${state.setup.level || ""} ${state.currentGame.home}, ${state.currentGame.opponent || "Opponent"} ${state.currentGame.away}
+
+${state.currentGame.date ? "Date: " + state.currentGame.date + "\n" : ""}Scoring Leaders
+${scorers.length ? scorers.map(x=>`${x.player.name} - ${x.stats.goals}G${x.stats.assists ? `, ${x.stats.assists}A` : ""}`).join("\n") : "No goal scorers logged"}
+
+Draw Controls
+Team draw wins: ${drawWins}/${drawTotal}${drawTotal ? ` (${Math.round((drawWins/drawTotal)*100)}%)` : ""}
+${drawLeaders.length ? drawLeaders.slice(0,5).map(x=>`${x.player.name} - ${x.stats.dc} DC`).join("\n") : "No individual draw controls logged"}
+
+Shot Chart
+Shots logged: ${shotTotal}
+Goals from shot map: ${shotGoals}
+
+Goalie
+${goalieName}: ${g.saves || 0} saves, ${g.ga || 0} GA, ${savePct}% save rate
+
+Game Notes
+Generated automatically by Sideline Lacrosse Stats`;
+      $("#recapText").value = text;
+      return text;
+    }
+
+    function backupState(){
+      const blob = new Blob([JSON.stringify(state,null,2)], {type:"application/json"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = "sideline-lacrosse-stats-backup.json"; a.click();
+      setTimeout(()=>URL.revokeObjectURL(url), 1000);
+    }
+
+    function renderAll(){
+      applySetup();
+      syncGameFields();
+      renderRoster();
+      renderPlayers();
+      renderDraws();
+      renderPlayerSelectors();
+      renderGoalie();
+      renderTimeline();
+      renderPenalties();
+      renderQuickSummary();
+      drawField();
+      generateRecap();
+    }
+
+    function bindEvents(){
+      // Tabs
+      $all(".tabs button").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          $all(".tabs button").forEach(b=>b.classList.remove("active"));
+          $all(".tab").forEach(t=>t.classList.remove("active"));
+          btn.classList.add("active");
+          $("#tab-" + btn.dataset.tab).classList.add("active");
+        });
+      });
+
+      // PWA install
+      window.addEventListener("beforeinstallprompt", (e)=>{
+        e.preventDefault(); deferredPrompt = e; $("#installBtn").classList.remove("hidden");
+      });
+      $("#installBtn").addEventListener("click", async ()=>{
+        if(!deferredPrompt) return;
+        deferredPrompt.prompt(); deferredPrompt = null; $("#installBtn").classList.add("hidden");
+      });
+
+      // Setup
+      $("#saveSetupBtn").addEventListener("click", ()=>{
+        state.setup.school = $("#schoolName").value.trim();
+        state.setup.team = $("#teamName").value.trim();
+        state.setup.mascot = $("#mascot").value.trim();
+        state.setup.level = $("#level").value;
+        state.setup.primary = $("#primaryColor").value;
+        state.setup.secondary = $("#secondaryColor").value;
+        state.setup.theme = $("#theme").value;
+        state.setup.quarterLength = parseInt($("#quarterLength").value || "12", 10);
+        clockRemaining = state.setup.quarterLength * 60;
+        saveState(); renderAll();
+      });
+      $("#newGameBtn").addEventListener("click", ()=>{
+        if(!confirm("Start a new game?")) return;
+        state.currentGame = structuredClone(defaultState.currentGame);
+        clockRemaining = state.setup.quarterLength * 60;
+        saveState(); renderAll();
+      });
+
+      // Import / roster
+      $("#tryUrlImportBtn").addEventListener("click", tryUrlImport);
+      $("#pasteImportBtn").addEventListener("click", importFromPaste);
+      $("#clearPasteBtn").addEventListener("click", ()=>{ $("#pasteImport").value = ""; $("#importStatus").textContent = ""; });
+      $("#htmlInput").addEventListener("change", e=>{
+        const file = e.target.files?.[0];
+        if(!file) return;
+        const r = new FileReader();
+        r.onload = ()=>{ $("#pasteImport").value = r.result; importFromPaste(); };
+        r.readAsText(file);
+      });
+      $("#photoInput").addEventListener("change", e=>{
+        const file = e.target.files?.[0];
+        if(!file) return;
+        const r = new FileReader();
+        r.onload = ()=> pendingPhoto = r.result;
+        r.readAsDataURL(file);
+      });
+      $("#addPlayerBtn").addEventListener("click", ()=>{
+        const num = $("#playerNumber").value.trim();
+        const name = $("#playerName").value.trim();
+        if(!num || !name) return alert("Add at least a player number and name.");
+        state.roster.push({
+          id: uid(), number:num, name,
+          position: $("#playerPosition").value.trim(),
+          classYear: $("#playerClassYear").value.trim(),
+          starter: $("#playerStarter").checked,
+          photo: pendingPhoto || ""
+        });
+        pendingPhoto = "";
+        $("#playerNumber").value = "";
+        $("#playerName").value = "";
+        $("#playerPosition").value = "";
+        $("#playerClassYear").value = "";
+        $("#playerStarter").checked = false;
+        $("#photoInput").value = "";
+        saveState(); renderRoster();
+      });
+      $("#sortRosterBtn").addEventListener("click", ()=>{
+        state.roster.sort((a,b)=>Number(a.number)-Number(b.number)); saveState(); renderRoster();
+      });
+      $("#loadRosterBtn").addEventListener("click", loadRosterForGame);
+
+      // Game
+      $("#opponentName").addEventListener("input", e=>{ state.currentGame.opponent = e.target.value; saveState(); syncGameFields(); });
+      $("#gameDate").addEventListener("change", e=>{ state.currentGame.date = e.target.value; saveState(); });
+      $("#period").addEventListener("change", e=>{ state.currentGame.period = e.target.value; saveState(); });
+      $("#homePlusBtn").addEventListener("click", ()=>{ state.currentGame.home++; saveState(); syncGameFields(); renderQuickSummary(); renderRecap(); });
+      $("#homeMinusBtn").addEventListener("click", ()=>{ state.currentGame.home = Math.max(0, state.currentGame.home-1); saveState(); syncGameFields(); renderQuickSummary(); renderRecap(); });
+      $("#awayPlusBtn").addEventListener("click", ()=>{ state.currentGame.away++; addTimeline("opp", `${state.currentGame.opponent || "Opponent"} goal`); saveState(); syncGameFields(); renderQuickSummary(); renderRecap(); });
+      $("#awayMinusBtn").addEventListener("click", ()=>{ state.currentGame.away = Math.max(0, state.currentGame.away-1); saveState(); syncGameFields(); renderQuickSummary(); renderRecap(); });
+      $("#clockStartBtn").addEventListener("click", ()=>{ if(clockTimer) return; clockTimer = setInterval(()=>{ clockRemaining = Math.max(0, clockRemaining-1); renderClock(); if(clockRemaining===0) clearInterval(clockTimer); }, 1000); });
+      $("#clockStopBtn").addEventListener("click", ()=>{ clearInterval(clockTimer); clockTimer = null; });
+      $("#clockResetBtn").addEventListener("click", ()=>{ clearInterval(clockTimer); clockTimer = null; clockRemaining = state.setup.quarterLength * 60; renderClock(); });
+      $("#clockPlus30Btn").addEventListener("click", ()=>{ clockRemaining += 30; renderClock(); });
+      $("#addPenaltyBtn").addEventListener("click", ()=>{
+        const who = prompt("Penalty player # or name");
+        if(who === null) return;
+        const length = parseInt($("#defaultPenaltyLength").value || "120", 10);
+        state.currentGame.penalties.push({id:uid(), player:who, remaining:length});
+        addTimeline("penalty", `Penalty — ${who}`);
+        saveState(); renderPenalties(); renderTimeline();
+      });
+
+      // Search
+      $("#playerSearch").addEventListener("input", renderPlayers);
+
+      // Draws
+      $("#drawWinBtn").addEventListener("click", ()=>{ state.currentGame.draws.push("W"); addTimeline("draw", "Draw win"); saveState(); renderDraws(); renderTimeline(); renderQuickSummary(); renderRecap(); });
+      $("#drawLossBtn").addEventListener("click", ()=>{ state.currentGame.draws.push("L"); addTimeline("draw", "Draw loss"); saveState(); renderDraws(); renderTimeline(); renderQuickSummary(); renderRecap(); });
+      $("#undoDrawBtn").addEventListener("click", ()=>{ state.currentGame.draws.pop(); saveState(); renderDraws(); renderQuickSummary(); renderRecap(); });
+      $("#clearDrawsBtn").addEventListener("click", ()=>{ state.currentGame.draws = []; saveState(); renderDraws(); renderQuickSummary(); renderRecap(); });
+
+      // Shots
+      $("#shotModeGoalBtn").addEventListener("click", ()=>{ state.currentGame.shotMode = "goal"; drawField(); });
+      $("#shotModeShotBtn").addEventListener("click", ()=>{ state.currentGame.shotMode = "shot"; drawField(); });
+      $("#undoShotBtn").addEventListener("click", ()=>{ state.currentGame.shots.pop(); saveState(); drawField(); renderRecap(); });
+      $("#clearShotsBtn").addEventListener("click", ()=>{ state.currentGame.shots = []; saveState(); drawField(); renderRecap(); });
+      $("#shotCanvas").addEventListener("click", e=>{
+        const canvas = $("#shotCanvas"), rect = canvas.getBoundingClientRect();
+        const x = Math.round((e.clientX - rect.left) * (canvas.width / rect.width));
+        const y = Math.round((e.clientY - rect.top) * (canvas.height / rect.height));
+        const playerId = $("#shotPlayerSelect").value || "";
+        state.currentGame.shots.push({x,y,type:state.currentGame.shotMode,playerId});
+        if(state.currentGame.shotMode === "goal"){
+          const p = state.currentGame.players.find(pp=>pp.id===playerId);
+          if(p){
+            ensureGameStats();
+            state.currentGame.playerStats[p.id].goals += 1;
+            state.currentGame.home += 1;
+            addTimeline("goal", `Goal map finish — ${p.name}`);
+          }
+        } else {
+          const p = state.currentGame.players.find(pp=>pp.id===playerId);
+          if(p){
+            ensureGameStats();
+            state.currentGame.playerStats[p.id].sog += 1;
+          }
+        }
+        saveState(); drawField(); syncGameFields(); renderPlayers(); renderTimeline(); renderQuickSummary(); renderRecap();
+      });
+
+      // Goalie
+      $("#goalieSelect").addEventListener("change", e=>{ state.currentGame.goalie.playerId = e.target.value; saveState(); renderGoalie(); });
+      $all("[data-goalie]").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const stat = btn.dataset.goalie;
+          const delta = parseInt(btn.dataset.delta, 10);
+          state.currentGame.goalie[stat] = Math.max(0, (state.currentGame.goalie[stat] || 0) + delta);
+          saveState(); renderGoalie(); renderRecap();
+        });
+      });
+
+      // Timeline
+      $("#timelineNoteBtn").addEventListener("click", ()=>{
+        const note = prompt("Timeline note");
+        if(note){ addTimeline("note", note); saveState(); renderTimeline(); }
+      });
+      $("#clearTimelineBtn").addEventListener("click", ()=>{
+        if(confirm("Clear all timeline events?")){ state.currentGame.timeline = []; saveState(); renderTimeline(); }
+      });
+
+      // Reports
+      $("#generateRecapBtn").addEventListener("click", generateRecap);
+      $("#copyRecapBtn").addEventListener("click", async ()=>{ await navigator.clipboard.writeText($("#recapText").value); alert("Recap copied."); });
+      $("#downloadRecapBtn").addEventListener("click", ()=>{
+        const blob = new Blob([$("#recapText").value], {type:"text/plain"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = "teamsnap-recap.txt"; a.click();
+        setTimeout(()=>URL.revokeObjectURL(url), 1000);
+      });
+
+      // Settings / data
+      $("#backupBtn").addEventListener("click", backupState);
+      $("#restoreInput").addEventListener("change", e=>{
+        const file = e.target.files?.[0];
+        if(!file) return;
+        const r = new FileReader();
+        r.onload = ()=>{
+          try{
+            state = JSON.parse(r.result);
+            saveState(); renderAll();
+            alert("Backup restored.");
+          }catch(err){ alert("Could not restore that file."); }
+        };
+        r.readAsText(file);
+      });
+      $("#saveSettingsBtn").addEventListener("click", ()=>{
+        state.setup.theme = $("#theme").value;
+        state.setup.quarterLength = parseInt($("#quarterLength").value || "12", 10);
+        saveState(); renderAll(); alert("Settings saved.");
+      });
+      $("#resetAppBtn").addEventListener("click", ()=>{
+        if(!confirm("Reset the entire application and clear all saved data?")) return;
+        localStorage.removeItem(STORAGE_KEY);
+        state = structuredClone(defaultState);
+        clearInterval(clockTimer); clockTimer = null;
+        renderAll();
+      });
+
+      if("serviceWorker" in navigator){
+        navigator.serviceWorker.register("./service-worker.js").catch(()=>{});
+      }
+    }
+
+    function renderClock(){ $("#clockDisplay").textContent = fmtClock(clockRemaining); }
+
+    bindEvents();
+    renderAll();
+  </script>
+</body>
+</html>

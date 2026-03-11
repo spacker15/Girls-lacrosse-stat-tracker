@@ -1,0 +1,8 @@
+{
+  "name": "Sideline Lacrosse Stats",
+  "short_name": "Lax Stats",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f1420",
+  "theme_color": "#0f1420"
+}
