@@ -1,22 +1,16 @@
-# Girls lacrosse stat tracker
+# Sideline Lacrosse Stats
 
-A complete browser-based lacrosse stat tracking application built for coaches, scorekeepers, and parent volunteers.
+A GitHub-ready browser app for girls lacrosse teams.
 
 ## Included features
-- automatic MaxPreps roster import (best effort URL import + reliable paste/upload fallback)
-- player photo stat cards
-- draw control circle tracker
-- goal map shot chart
-- goalie stat mode
-- automatic TeamSnap recap generator
-- live scoreboard and game clock
-- penalty tracking
-- timeline
-- backup and restore
-- offline support after first load
-
-## Notes
-Direct roster import from third-party sites can be blocked by browser security rules on static hosting. That is why this app also supports pasted page text/HTML and saved HTML uploads.
-
-## Deploy
-Upload the contents of this folder to a GitHub repo and enable GitHub Pages from the root of the main branch.
+- Country / State / School selector
+- automatic roster loading
+- MaxPreps roster importer workflow
+- clickable lacrosse field shot map
+- stat cards with player photos
+- automatic stat leaders
+- goalie save % tracking
+- multi-game history
+- mobile sideline UI with big buttons for coaches
+- TeamSnap recap generator
+- game clock
