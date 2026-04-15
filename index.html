@@ -125,6 +125,9 @@ Away
 let clock=720
 let timer=null
 let stats={}
+let currentPlayers=[]
+let gameRoster=new Set()
+let selectingRoster=false
 
 function populate(){
 
@@ -209,10 +212,47 @@ let k=swingStoreKey(name)
 if(tags[k])delete tags[k]
 else tags[k]=true
 setSwingTags(tags)
-loadRoster()
+rebuildCurrentPlayers()
+renderRoster()
 }
 
-function loadRoster(){
+function gameRosterKey(){
+return "gameRoster|"+countryEl().value+"|"+stateEl().value+"|"+schoolEl().value+"|"+level.value
+}
+
+function loadGameRoster(){
+let stored=localStorage.getItem(gameRosterKey())
+gameRoster=new Set(stored?JSON.parse(stored):[])
+}
+
+function persistGameRoster(){
+localStorage.setItem(gameRosterKey(),JSON.stringify([...gameRoster]))
+}
+
+function toggleGameRoster(name){
+if(gameRoster.has(name))gameRoster.delete(name)
+else gameRoster.add(name)
+persistGameRoster()
+}
+
+function saveGameRoster(){
+selectingRoster=false
+renderRoster()
+}
+
+function editGameRoster(){
+selectingRoster=true
+renderRoster()
+}
+
+function clearGameRoster(){
+gameRoster.clear()
+persistGameRoster()
+selectingRoster=true
+renderRoster()
+}
+
+function rebuildCurrentPlayers(){
 
 let country=countryEl().value
 let state=stateEl().value
@@ -230,10 +270,66 @@ players.push(p)
 }
 })
 
+currentPlayers=players
+
+}
+
+function loadRoster(){
+
+rebuildCurrentPlayers()
+loadGameRoster()
+selectingRoster=gameRoster.size===0
+renderRoster()
+
+}
+
+function renderRoster(){
+
 let box=document.getElementById("roster")
 box.innerHTML=""
 
-players.forEach(p=>{
+let header=document.createElement("div")
+header.style.margin="0 0 10px 0"
+
+if(selectingRoster){
+header.innerHTML='<b>Select players rostered for this game ('+gameRoster.size+' selected):</b> '
+let saveBtn=document.createElement("button")
+saveBtn.textContent="Save Game Roster"
+saveBtn.style.width="auto"
+saveBtn.style.padding="6px 12px"
+saveBtn.style.marginLeft="8px"
+saveBtn.onclick=saveGameRoster
+header.appendChild(saveBtn)
+}else{
+header.innerHTML='<b>Game Roster ('+gameRoster.size+' players)</b> '
+let editBtn=document.createElement("button")
+editBtn.textContent="Edit Game Roster"
+editBtn.style.width="auto"
+editBtn.style.padding="6px 12px"
+editBtn.style.marginLeft="8px"
+editBtn.onclick=editGameRoster
+header.appendChild(editBtn)
+let clearBtn=document.createElement("button")
+clearBtn.textContent="Clear"
+clearBtn.style.width="auto"
+clearBtn.style.padding="6px 12px"
+clearBtn.style.marginLeft="6px"
+clearBtn.style.background="#ef4444"
+clearBtn.onclick=clearGameRoster
+header.appendChild(clearBtn)
+}
+box.appendChild(header)
+
+let visible=selectingRoster?currentPlayers:currentPlayers.filter(p=>gameRoster.has(p.name))
+
+if(!selectingRoster&&visible.length===0){
+let empty=document.createElement("div")
+empty.textContent="No players rostered for this game. Click Edit Game Roster to add players."
+box.appendChild(empty)
+return
+}
+
+visible.forEach(p=>{
 
 stats[p.name]=stats[p.name]||{goals:0}
 
@@ -244,6 +340,17 @@ let toggleLabel=swing?"Unmark Swing":"Mark Swing"
 let card=document.createElement("div")
 card.className="playerCard"
 
+if(selectingRoster){
+let checked=gameRoster.has(p.name)?"checked":""
+card.innerHTML=`
+<input type="checkbox" ${checked} onchange="toggleGameRoster('${p.name}');renderRoster()" style="width:auto;margin-right:12px;transform:scale(1.5)">
+<div>
+<b>#${p.number} ${p.name}</b>${badge}<br>
+${p.position}
+<button onclick="toggleSwing('${p.name}')">${toggleLabel}</button>
+</div>
+`
+}else{
 card.innerHTML=`
 <img src="https://via.placeholder.com/50">
 <div>
@@ -253,6 +360,7 @@ ${p.position}
 <button onclick="toggleSwing('${p.name}')">${toggleLabel}</button>
 </div>
 `
+}
 
 box.appendChild(card)
 
