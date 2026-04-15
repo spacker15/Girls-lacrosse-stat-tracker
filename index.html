@@ -15,6 +15,7 @@ button{background:#38bdf8;color:black;font-weight:bold;font-size:16px}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .playerCard{background:#334155;padding:10px;border-radius:8px;margin:6px 0;display:flex;align-items:center}
 .playerCard img{width:50px;height:50px;border-radius:50%;margin-right:10px}
+.swingBadge{background:#f59e0b;color:black;padding:2px 6px;border-radius:4px;font-size:11px;margin-left:6px;font-weight:bold}
 .score{font-size:42px;text-align:center}
 .bigButton{font-size:22px;padding:14px}
 canvas{background:#166534;border-radius:10px;width:100%}
@@ -185,18 +186,60 @@ function countryEl(){return document.getElementById("country")}
 function stateEl(){return document.getElementById("state")}
 function schoolEl(){return document.getElementById("school")}
 
+function swingStoreKey(name){
+return countryEl().value+"|"+stateEl().value+"|"+schoolEl().value+"|"+name
+}
+
+function getSwingTags(){
+return JSON.parse(localStorage.getItem("swingTags")||"{}")
+}
+
+function setSwingTags(tags){
+localStorage.setItem("swingTags",JSON.stringify(tags))
+}
+
+function isSwing(player){
+if(player.swing)return true
+return !!getSwingTags()[swingStoreKey(player.name)]
+}
+
+function toggleSwing(name){
+let tags=getSwingTags()
+let k=swingStoreKey(name)
+if(tags[k])delete tags[k]
+else tags[k]=true
+setSwingTags(tags)
+loadRoster()
+}
+
 function loadRoster(){
 
-let key=countryEl().value+"|"+stateEl().value+"|"+schoolEl().value+"|"+level.value
+let country=countryEl().value
+let state=stateEl().value
+let school=schoolEl().value
+let currentLevel=level.value
+let otherLevel=currentLevel=="Varsity"?"JV":"Varsity"
 
-let players=rosters[key]||[]
+let baseKey=country+"|"+state+"|"+school+"|"
+let players=(rosters[baseKey+currentLevel]||[]).slice()
+
+let otherPlayers=rosters[baseKey+otherLevel]||[]
+otherPlayers.forEach(p=>{
+if(isSwing(p)&&!players.find(x=>x.name===p.name)){
+players.push(p)
+}
+})
 
 let box=document.getElementById("roster")
 box.innerHTML=""
 
 players.forEach(p=>{
 
-stats[p.name]={goals:0}
+stats[p.name]=stats[p.name]||{goals:0}
+
+let swing=isSwing(p)
+let badge=swing?'<span class="swingBadge">SWING (JV+V)</span>':''
+let toggleLabel=swing?"Unmark Swing":"Mark Swing"
 
 let card=document.createElement("div")
 card.className="playerCard"
@@ -204,9 +247,10 @@ card.className="playerCard"
 card.innerHTML=`
 <img src="https://via.placeholder.com/50">
 <div>
-<b>#${p.number} ${p.name}</b><br>
+<b>#${p.number} ${p.name}</b>${badge}<br>
 ${p.position}
 <button onclick="goal('${p.name}')">Goal</button>
+<button onclick="toggleSwing('${p.name}')">${toggleLabel}</button>
 </div>
 `
 
